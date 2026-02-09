@@ -1,0 +1,10 @@
+{
+  "id": "evt_refund_1",
+  "eventType": "refund.created",
+  "created_at": 1728734400000,
+  "object": {
+    "id": "ref_1",
+    "status": "refunded",
+    "transaction_id": "tran_1"
+  }
+}

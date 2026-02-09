@@ -1,0 +1,10 @@
+{
+  "id": "evt_dispute_1",
+  "eventType": "dispute.created",
+  "created_at": 1728734500000,
+  "object": {
+    "id": "dsp_1",
+    "status": "chargeback",
+    "transaction_id": "tran_1"
+  }
+}

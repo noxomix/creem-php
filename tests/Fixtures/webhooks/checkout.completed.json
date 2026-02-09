@@ -1,0 +1,15 @@
+{
+  "id": "evt_checkout_1",
+  "eventType": "checkout.completed",
+  "created_at": 1728734325927,
+  "object": {
+    "id": "ch_1",
+    "object": "checkout",
+    "status": "completed",
+    "request_id": "req_1",
+    "subscription": {
+      "id": "sub_1",
+      "status": "active"
+    }
+  }
+}

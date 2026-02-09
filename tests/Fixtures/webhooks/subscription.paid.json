@@ -1,0 +1,11 @@
+{
+  "id": "evt_subscription_paid_1",
+  "eventType": "subscription.paid",
+  "created_at": 1728734327355,
+  "object": {
+    "id": "sub_1",
+    "object": "subscription",
+    "status": "active",
+    "last_transaction_id": "tran_1"
+  }
+}
