@@ -22,11 +22,20 @@ final class CreemClientTest extends TestCase
     {
         $client = new CreemClient([
             'api_key' => 'creem_test_key',
-            'mode' => EnvMode::TEST,
         ]);
 
         $this->assertSame('test', $client->mode());
         $this->assertSame('https://test-api.creem.io/v1/checkouts', $client->endpoint('/v1/checkouts'));
+    }
+
+    public function test_it_allows_explicit_mode_enum_input(): void
+    {
+        $client = new CreemClient([
+            'api_key' => 'creem_test_key',
+            'mode' => EnvMode::TEST,
+        ]);
+
+        $this->assertSame('test', $client->mode());
     }
 
     public function test_it_throws_for_missing_api_key_in_array_configuration(): void

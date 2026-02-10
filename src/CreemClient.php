@@ -369,7 +369,7 @@ final class CreemClient
             throw new InvalidConfigurationException('config["api_key"] must be a string.');
         }
 
-        $mode = $config['mode'] ?? 'prod';
+        $mode = $config['mode'] ?? 'test';
         $baseUrl = $config['base_url'] ?? null;
         $options = [];
 

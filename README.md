@@ -13,8 +13,6 @@ composer require noxomix/creem-php
 ```php
 <?php
 
-declare(strict_types=1);
-
 use Noxomix\CreemPhp\Config\EnvMode;
 use Noxomix\CreemPhp\CreemClient;
 use Noxomix\CreemPhp\Discount\DiscountDuration;
@@ -24,7 +22,7 @@ use Noxomix\CreemPhp\Subscription\SubscriptionStatus;
 
 $client = new CreemClient([
     'api_key' => 'creem_your_api_key',
-    'mode' => EnvMode::TEST,
+    'mode' => EnvMode::TEST, // default
 ]);
 
 $checkout = $client->checkouts()->create(
@@ -79,10 +77,10 @@ $repeatingDiscount = $client->discounts()->create(
     durationInMonths: 3,
 );
 
-$subscription = $client->subscriptions()->retrieve('sub_123');
-$customers = $client->customers()->list();
-$customerByEmail = $client->customers()->retrieveByEmail('user@example.ee');
-$transactions = $client->transactions()->search();
+$subscription = $client->subscriptions()->retrieve('sub_123'); // Load one subscription by ID
+$customers = $client->customers()->list(); // Fetch first customer page (defaults: page 1, size 50)
+$customerByEmail = $client->customers()->retrieveByEmail('user@example.ee'); // Fetch one customer by email
+$transactions = $client->transactions()->search(); // Search transactions with default query
 
 if ($subscription->status() === SubscriptionStatus::ACTIVE) {
     $client->subscriptions()->cancel('sub_123');
@@ -96,8 +94,6 @@ For recurring products, preferred enum values are `EVERY_MONTH`, `EVERY_THREE_MO
 
 ```php
 <?php
-
-declare(strict_types=1);
 
 use Noxomix\CreemPhp\Webhook\Dispatch\DefaultWebhookDispatcher;
 use Noxomix\CreemPhp\Webhook\WebhookProcessor;
@@ -123,9 +119,7 @@ $result = $processor->process($rawJsonBody, $headers['creem-signature'] ?? null)
 ## Notes
 
 - Guzzle HTTP.
-- Logging contract is PSR-3 with `NullLogger` default.
 - Error diagnostics preserve `trace_id`, `status`, `error`, and `message` values when present.
 - Root client exposes domain services: `checkouts`, `subscriptions`, `customers`, `transactions`, `products`, `discounts`, `licenses`.
 - Enums resolve to API strings, but string input remains supported (`EnvMode`, `BillingType`, `BillingPeriod`, `DiscountDuration`).
-- Prefer `request(new RequestOptions(...))` over positional `rawRequest(...)` when using raw endpoints.
 - Webhook processing includes signature verification, parsing, dispatching, and duplicate-event protection.

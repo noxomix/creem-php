@@ -62,6 +62,8 @@ final class CreemConfigTest extends TestCase
     {
         $config = CreemConfig::fromApiKey('creem_test_key');
 
+        $this->assertSame('test', $config->mode());
+        $this->assertSame('https://test-api.creem.io', $config->baseUrl());
         $this->assertSame(10.0, $config->connectTimeoutSeconds());
         $this->assertSame(30.0, $config->requestTimeoutSeconds());
         $this->assertSame(3, $config->maxRetries());

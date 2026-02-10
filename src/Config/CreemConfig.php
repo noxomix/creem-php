@@ -37,7 +37,7 @@ final class CreemConfig
      */
     public static function fromApiKey(
         string $apiKey,
-        EnvMode|string $mode = 'prod',
+        EnvMode|string $mode = 'test',
         array $options = [],
     ): self
     {
@@ -73,7 +73,7 @@ final class CreemConfig
     public static function fromBaseUrl(
         string $apiKey,
         string $baseUrl,
-        EnvMode|string $mode = 'prod',
+        EnvMode|string $mode = 'test',
         array $options = [],
     ): self
     {
