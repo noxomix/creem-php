@@ -18,7 +18,7 @@ final class DiscountsService
     }
 
     /**
-     * @param array<int, string> $appliesToProducts
+     * @param list<string> $appliesToProducts
      */
     public function create(
         string $name,
@@ -166,8 +166,8 @@ final class DiscountsService
     }
 
     /**
-     * @param array<int, string> $products
-     * @return array<int, string>
+     * @param list<string> $products
+     * @return list<string>
      */
     private function normalizeProducts(array $products): array
     {

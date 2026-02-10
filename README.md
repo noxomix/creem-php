@@ -85,10 +85,17 @@ $repeatingDiscount = $client->discounts()->create(
     durationInMonths: 3,
 );
 
-$subscription = $client->subscriptions()->retrieve('sub_123'); // Load one subscription by ID
-$customers = $client->customers()->list(); // Fetch first customer page (defaults: page 1, size 50)
-$customerByEmail = $client->customers()->retrieve(email: 'user@example.ee'); // Fetch one customer by email
-$transactions = $client->transactions()->search(); // Search transactions with default query
+// Load one subscription by ID
+$subscription = $client->subscriptions()->retrieve('sub_123');
+
+// Fetch first customer page (defaults: page 1, size 50)
+$customers = $client->customers()->list();
+
+ // Fetch one customer by email
+$customerByEmail = $client->customers()->retrieve(email: 'user@example.ee');
+
+// Search transactions with default query
+$transactions = $client->transactions()->search();
 
 if ($subscription->status() === SubscriptionStatus::ACTIVE) {
     $client->subscriptions()->cancel('sub_123');

@@ -40,7 +40,7 @@ final class SubscriptionsService
     }
 
     /**
-     * @param array<int, array<string, mixed>> $items
+     * @param list<array<string, mixed>> $items
      */
     public function update(
         string $subscriptionId,
