@@ -1,6 +1,6 @@
 # Creem PHP
 
-[![Unit Tests](https://github.com/noxomix/creem-php/actions/workflows/unit-tests.yml/badge.svg?branch=main)](https://github.com/noxomix/creem-php/actions/workflows/unit-tests.yml?query=branch%3Amain)
+[![Unit Tests](https://github.com/noxomix/creem-php/actions/workflows/unit-tests.yml/badge.svg?event=push)](https://github.com/noxomix/creem-php/actions/workflows/unit-tests.yml?query=event%3Apush)
 
 `noxomix/creem-php` is a framework-agnostic core SDK for Creem integrations.
 
