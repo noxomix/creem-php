@@ -118,14 +118,9 @@ $result = $processor->process($rawJsonBody, $headers['creem-signature'] ?? null)
 
 ## Notes
 
-- V1 transport uses Guzzle.
+- Guzzle HTTP.
 - Logging contract is PSR-3 with `NullLogger` default.
 - Error diagnostics preserve `trace_id`, `status`, `error`, and `message` values when present.
 - Root client exposes domain services: `checkouts`, `subscriptions`, `customers`, `transactions`, `products`, `discounts`, `licenses`.
 - Prefer `request(new RequestOptions(...))` over positional `rawRequest(...)` when using raw endpoints.
 - Webhook processing includes signature verification, parsing, dispatching, and duplicate-event protection.
-- Default webhook idempotency storage is in-memory and process-local; production multi-worker setups should inject a persistent `WebhookIdempotencyStoreInterface` implementation with atomic `claim` semantics.
-
-## Governance
-
-- Constitution: `CONSTITUTION.md`
