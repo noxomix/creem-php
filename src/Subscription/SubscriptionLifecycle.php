@@ -8,34 +8,34 @@ final class SubscriptionLifecycle
 {
     /** @var array<int, string> */
     private const TERMINAL_EVENTS = [
-        SubscriptionEventType::SUBSCRIPTION_CANCELED->value,
+        'subscription.canceled',
     ];
 
     /** @var array<int, string> */
     private const NON_TERMINAL_EVENTS = [
-        SubscriptionEventType::CHECKOUT_COMPLETED->value,
-        SubscriptionEventType::SUBSCRIPTION_PAID->value,
-        SubscriptionEventType::SUBSCRIPTION_ACTIVE->value,
-        SubscriptionEventType::SUBSCRIPTION_UPDATE->value,
-        SubscriptionEventType::SUBSCRIPTION_TRIALING->value,
-        SubscriptionEventType::SUBSCRIPTION_PAUSED->value,
-        SubscriptionEventType::SUBSCRIPTION_SCHEDULED_CANCEL->value,
-        SubscriptionEventType::SUBSCRIPTION_PAST_DUE->value,
-        SubscriptionEventType::SUBSCRIPTION_EXPIRED->value,
+        'checkout.completed',
+        'subscription.paid',
+        'subscription.active',
+        'subscription.update',
+        'subscription.trialing',
+        'subscription.paused',
+        'subscription.scheduled_cancel',
+        'subscription.past_due',
+        'subscription.expired',
     ];
 
     /** @var array<int, string> */
     private const RETRY_WINDOW_STATUSES = [
-        SubscriptionStatus::UNPAID->value,
-        SubscriptionStatus::PAST_DUE->value,
-        SubscriptionStatus::EXPIRED->value,
+        'unpaid',
+        'past_due',
+        'expired',
     ];
 
     /** @var array<int, string> */
     private const TRANSITIONAL_STATUSES = [
-        SubscriptionStatus::SCHEDULED_CANCEL->value,
-        SubscriptionStatus::TRIALING->value,
-        SubscriptionStatus::PAUSED->value,
+        'scheduled_cancel',
+        'trialing',
+        'paused',
     ];
 
     /**
