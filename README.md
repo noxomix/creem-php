@@ -1,5 +1,7 @@
 # Creem PHP
 
+[![Unit Tests](https://github.com/noxomix/creem-php/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/noxomix/creem-php/actions/workflows/unit-tests.yml)
+
 `noxomix/creem-php` is a framework-agnostic core SDK for Creem integrations.
 
 ## Installation
