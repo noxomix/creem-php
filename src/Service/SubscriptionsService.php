@@ -7,31 +7,25 @@ namespace Noxomix\CreemPhp\Service;
 use Noxomix\CreemPhp\CreemClient;
 use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 use Noxomix\CreemPhp\Http\RequestOptions;
-use Noxomix\CreemPhp\Request\Subscriptions\CancelSubscriptionRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\PauseSubscriptionRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\ResumeSubscriptionRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\UpdateSubscriptionRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\UpgradeSubscriptionRequest;
 use Noxomix\CreemPhp\Resource\SubscriptionResource;
 
 final class SubscriptionsService
 {
+    /** @var array<int, string> */
+    private const ALLOWED_UPDATE_BEHAVIORS = [
+        'proration-charge-immediately',
+        'proration-charge',
+        'proration-none',
+    ];
+
     public function __construct(
         private readonly CreemClient $client,
     ) {
     }
 
-    /**
-     * @param string $subscriptionId
-     * @return SubscriptionResource
-     */
     public function retrieve(string $subscriptionId): SubscriptionResource
     {
-        $normalizedSubscriptionId = trim($subscriptionId);
-
-        if ($normalizedSubscriptionId === '') {
-            throw new InvalidConfigurationException('subscriptionId must not be empty.');
-        }
+        $normalizedSubscriptionId = $this->normalizeSubscriptionId($subscriptionId);
 
         return new SubscriptionResource($this->client->request(new RequestOptions(
             method: 'GET',
@@ -40,102 +34,116 @@ final class SubscriptionsService
         )));
     }
 
-    /**
-     * @param string $subscriptionId
-     * @return SubscriptionResource
-     */
     public function reconcile(string $subscriptionId): SubscriptionResource
     {
         return $this->retrieve($subscriptionId);
     }
 
     /**
-     * @param string $subscriptionId
-     * @param UpdateSubscriptionRequest $payload
-     * @return SubscriptionResource
+     * @param array<int, array<string, mixed>> $items
      */
     public function update(
         string $subscriptionId,
-        UpdateSubscriptionRequest $payload,
-    ): SubscriptionResource
-    {
+        string $updateBehavior = 'proration-charge',
+        array $items = [],
+        ?string $requestId = null,
+    ): SubscriptionResource {
+        $normalizedUpdateBehavior = $this->normalizeUpdateBehavior($updateBehavior);
+        $body = [
+            'update_behavior' => $normalizedUpdateBehavior,
+        ];
+
+        if ($items !== []) {
+            $body['items'] = $items;
+        }
+
         return new SubscriptionResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: sprintf('/v1/subscriptions/%s', $this->normalizeSubscriptionId($subscriptionId)),
-            body: $payload->toArray(),
-            requestId: $payload->requestId(),
+            body: $body,
+            requestId: $requestId,
         )));
     }
 
-    /**
-     * @param string $subscriptionId
-     * @param UpgradeSubscriptionRequest $payload
-     * @return SubscriptionResource
-     */
     public function upgrade(
         string $subscriptionId,
-        UpgradeSubscriptionRequest $payload,
-    ): SubscriptionResource
-    {
+        string $productId,
+        string $updateBehavior = 'proration-charge-immediately',
+        ?string $requestId = null,
+    ): SubscriptionResource {
+        $normalizedProductId = trim($productId);
+        $normalizedUpdateBehavior = $this->normalizeUpdateBehavior($updateBehavior);
+
+        if ($normalizedProductId === '') {
+            throw new InvalidConfigurationException('productId must not be empty.');
+        }
+
         return new SubscriptionResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: sprintf('/v1/subscriptions/%s/upgrade', $this->normalizeSubscriptionId($subscriptionId)),
-            body: $payload->toArray(),
-            requestId: $payload->requestId(),
+            body: [
+                'product_id' => $normalizedProductId,
+                'update_behavior' => $normalizedUpdateBehavior,
+            ],
+            requestId: $requestId,
         )));
     }
 
-    /**
-     * @param string $subscriptionId
-     * @param CancelSubscriptionRequest|null $payload
-     * @return SubscriptionResource
-     */
     public function cancel(
         string $subscriptionId,
-        ?CancelSubscriptionRequest $payload = null,
-    ): SubscriptionResource
-    {
-        $requestPayload = $payload ?? new CancelSubscriptionRequest();
+        ?string $mode = null,
+        ?string $onExecute = null,
+        ?string $requestId = null,
+    ): SubscriptionResource {
+        $body = [];
+        $normalizedMode = $this->normalizeNullable($mode);
+        $normalizedOnExecute = $this->normalizeNullable($onExecute);
+
+        if ($normalizedMode !== null) {
+            if (! in_array($normalizedMode, ['immediate', 'scheduled'], true)) {
+                throw new InvalidConfigurationException('mode must be "immediate" or "scheduled" when provided.');
+            }
+
+            $body['mode'] = $normalizedMode;
+        }
+
+        if ($normalizedOnExecute !== null) {
+            if (! in_array($normalizedOnExecute, ['cancel', 'pause'], true)) {
+                throw new InvalidConfigurationException('onExecute must be "cancel" or "pause" when provided.');
+            }
+
+            if ($normalizedMode !== 'scheduled') {
+                throw new InvalidConfigurationException('onExecute is only valid when mode is "scheduled".');
+            }
+
+            $body['onExecute'] = $normalizedOnExecute;
+        }
 
         return new SubscriptionResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: sprintf('/v1/subscriptions/%s/cancel', $this->normalizeSubscriptionId($subscriptionId)),
-            body: $requestPayload->toArray(),
-            requestId: $requestPayload->requestId(),
+            body: $body,
+            requestId: $requestId,
         )));
     }
 
-    /**
-     * @param string $subscriptionId
-     * @param PauseSubscriptionRequest|null $payload
-     * @return SubscriptionResource
-     */
-    public function pause(string $subscriptionId, ?PauseSubscriptionRequest $payload = null): SubscriptionResource
+    public function pause(string $subscriptionId, ?string $requestId = null): SubscriptionResource
     {
-        $requestPayload = $payload ?? new PauseSubscriptionRequest();
-
         return new SubscriptionResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: sprintf('/v1/subscriptions/%s/pause', $this->normalizeSubscriptionId($subscriptionId)),
-            body: $requestPayload->toArray(),
-            requestId: $requestPayload->requestId(),
+            body: [],
+            requestId: $requestId,
         )));
     }
 
-    /**
-     * @param string $subscriptionId
-     * @param ResumeSubscriptionRequest|null $payload
-     * @return SubscriptionResource
-     */
-    public function resume(string $subscriptionId, ?ResumeSubscriptionRequest $payload = null): SubscriptionResource
+    public function resume(string $subscriptionId, ?string $requestId = null): SubscriptionResource
     {
-        $requestPayload = $payload ?? new ResumeSubscriptionRequest();
-
         return new SubscriptionResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: sprintf('/v1/subscriptions/%s/resume', $this->normalizeSubscriptionId($subscriptionId)),
-            body: $requestPayload->toArray(),
-            requestId: $requestPayload->requestId(),
+            body: [],
+            requestId: $requestId,
         )));
     }
 
@@ -148,5 +156,34 @@ final class SubscriptionsService
         }
 
         return $normalizedSubscriptionId;
+    }
+
+    private function normalizeNullable(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = trim($value);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeUpdateBehavior(string $updateBehavior): string
+    {
+        $normalized = strtolower(trim($updateBehavior));
+
+        if (! in_array($normalized, self::ALLOWED_UPDATE_BEHAVIORS, true)) {
+            throw new InvalidConfigurationException(sprintf(
+                'updateBehavior must be one of: %s.',
+                implode(', ', self::ALLOWED_UPDATE_BEHAVIORS),
+            ));
+        }
+
+        return $normalized;
     }
 }

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Noxomix\CreemPhp\Tests\Unit;
 
-use Noxomix\CreemPhp\Config\CreemConfig;
+use Noxomix\CreemPhp\Config\EnvMode;
 use Noxomix\CreemPhp\CreemClient;
+use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 use Noxomix\CreemPhp\Exception\NetworkException;
 use Noxomix\CreemPhp\Exception\RateLimitException;
 use Noxomix\CreemPhp\Exception\ValidationException;
@@ -17,11 +18,32 @@ use PHPUnit\Framework\TestCase;
 
 final class CreemClientTest extends TestCase
 {
+    public function test_it_accepts_array_configuration_in_constructor(): void
+    {
+        $client = new CreemClient([
+            'api_key' => 'creem_test_key',
+            'mode' => EnvMode::TEST,
+        ]);
+
+        $this->assertSame('test', $client->mode());
+        $this->assertSame('https://test-api.creem.io/v1/checkouts', $client->endpoint('/v1/checkouts'));
+    }
+
+    public function test_it_throws_for_missing_api_key_in_array_configuration(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+
+        new CreemClient([
+            'mode' => 'test',
+        ]);
+    }
+
     public function test_it_builds_absolute_endpoints(): void
     {
-        $client = new CreemClient(
-            CreemConfig::fromApiKey('creem_test_key', 'test'),
-        );
+        $client = new CreemClient([
+            'api_key' => 'creem_test_key',
+            'mode' => 'test',
+        ]);
 
         $this->assertSame(
             'https://test-api.creem.io/v1/checkouts',
@@ -36,7 +58,10 @@ final class CreemClientTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: $transport,
         );
 
@@ -67,7 +92,10 @@ final class CreemClientTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: $transport,
         );
 
@@ -92,7 +120,10 @@ final class CreemClientTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: $transport,
         );
 
@@ -121,11 +152,13 @@ final class CreemClientTest extends TestCase
         $sleeper = new FakeSleeper();
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test', [
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
                 'max_retries' => 2,
                 'retry_base_delay_ms' => 1000,
                 'retry_max_delay_ms' => 1000,
-            ]),
+            ],
             transport: $transport,
             sleeper: $sleeper,
         );
@@ -148,11 +181,13 @@ final class CreemClientTest extends TestCase
         $sleeper = new FakeSleeper();
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test', [
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
                 'max_retries' => 1,
                 'retry_base_delay_ms' => 500,
                 'retry_max_delay_ms' => 500,
-            ]),
+            ],
             transport: $transport,
             sleeper: $sleeper,
         );
@@ -175,7 +210,11 @@ final class CreemClientTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test', ['max_retries' => 0]),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+                'max_retries' => 0,
+            ],
             transport: $transport,
         );
 
@@ -200,11 +239,13 @@ final class CreemClientTest extends TestCase
         $sleeper = new FakeSleeper();
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test', [
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
                 'max_retries' => 1,
                 'retry_base_delay_ms' => 250,
                 'retry_max_delay_ms' => 250,
-            ]),
+            ],
             transport: $transport,
             sleeper: $sleeper,
         );

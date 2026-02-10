@@ -9,7 +9,6 @@ use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 use Noxomix\CreemPhp\Http\RequestOptions;
 use Noxomix\CreemPhp\Pagination\PaginatedResponse;
 use Noxomix\CreemPhp\Pagination\PaginationExtractor;
-use Noxomix\CreemPhp\Request\Customers\CreateBillingLinkRequest;
 use Noxomix\CreemPhp\Resource\BillingLinkResource;
 use Noxomix\CreemPhp\Resource\CustomerResource;
 
@@ -20,10 +19,6 @@ final class CustomersService
     ) {
     }
 
-    /**
-     * @param string $customerId
-     * @return CustomerResource
-     */
     public function retrieve(string $customerId): CustomerResource
     {
         $normalizedCustomerId = trim($customerId);
@@ -39,10 +34,6 @@ final class CustomersService
         )));
     }
 
-    /**
-     * @param string $email
-     * @return CustomerResource
-     */
     public function retrieveByEmail(string $email): CustomerResource
     {
         $normalizedEmail = trim($email);
@@ -58,11 +49,6 @@ final class CustomersService
         )));
     }
 
-    /**
-     * @param int $pageNumber
-     * @param int $pageSize
-     * @return PaginatedResponse
-     */
     public function list(int $pageNumber = 1, int $pageSize = 50): PaginatedResponse
     {
         if ($pageNumber <= 0) {
@@ -88,17 +74,21 @@ final class CustomersService
         );
     }
 
-    /**
-     * @param CreateBillingLinkRequest $payload
-     * @return BillingLinkResource
-     */
-    public function createBillingLink(CreateBillingLinkRequest $payload): BillingLinkResource
+    public function createBillingLink(string $customerId, ?string $requestId = null): BillingLinkResource
     {
+        $normalizedCustomerId = trim($customerId);
+
+        if ($normalizedCustomerId === '') {
+            throw new InvalidConfigurationException('customerId must not be empty.');
+        }
+
         return new BillingLinkResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: '/v1/customers/billing',
-            body: $payload->toArray(),
-            requestId: $payload->requestId(),
+            body: [
+                'customer_id' => $normalizedCustomerId,
+            ],
+            requestId: $requestId,
         )));
     }
 }

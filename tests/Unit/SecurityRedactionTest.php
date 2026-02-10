@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Noxomix\CreemPhp\Tests\Unit;
 
-use Noxomix\CreemPhp\Config\CreemConfig;
 use Noxomix\CreemPhp\CreemClient;
 use Noxomix\CreemPhp\Exception\InvalidWebhookSignatureException;
 use Noxomix\CreemPhp\Exception\NetworkException;
@@ -38,11 +37,13 @@ final class SecurityRedactionTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey($apiKey, 'test', [
+            config: [
+                'api_key' => $apiKey,
+                'mode' => 'test',
                 'max_retries' => 1,
                 'retry_base_delay_ms' => 100,
                 'retry_max_delay_ms' => 100,
-            ]),
+            ],
             transport: $transport,
             logger: $logger,
             sleeper: $sleeper,

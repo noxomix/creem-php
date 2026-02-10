@@ -9,7 +9,8 @@ use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 use Noxomix\CreemPhp\Http\RequestOptions;
 use Noxomix\CreemPhp\Pagination\PaginatedResponse;
 use Noxomix\CreemPhp\Pagination\PaginationExtractor;
-use Noxomix\CreemPhp\Request\Products\CreateProductRequest;
+use Noxomix\CreemPhp\Product\BillingPeriod;
+use Noxomix\CreemPhp\Product\BillingType;
 use Noxomix\CreemPhp\Resource\ProductResource;
 
 final class ProductsService
@@ -19,24 +20,57 @@ final class ProductsService
     ) {
     }
 
-    /**
-     * @param CreateProductRequest $payload
-     * @return ProductResource
-     */
-    public function create(CreateProductRequest $payload): ProductResource
-    {
+    public function create(
+        string $name,
+        int $price,
+        string $currency,
+        BillingType|string $billingType,
+        BillingPeriod|string|null $billingPeriod = null,
+        ?string $requestId = null,
+    ): ProductResource {
+        $normalizedName = trim($name);
+        $normalizedCurrency = strtoupper(trim($currency));
+        $normalizedBillingType = BillingType::fromInput($billingType)->value;
+
+        if ($normalizedName === '') {
+            throw new InvalidConfigurationException('name must not be empty.');
+        }
+
+        if ($price < 100) {
+            throw new InvalidConfigurationException('price must be at least 100 cents.');
+        }
+
+        if ($normalizedCurrency === '') {
+            throw new InvalidConfigurationException('currency must not be empty.');
+        }
+
+        $body = [
+            'name' => $normalizedName,
+            'price' => $price,
+            'currency' => $normalizedCurrency,
+            'billing_type' => $normalizedBillingType,
+        ];
+
+        if ($normalizedBillingType === BillingType::RECURRING->value) {
+            if ($billingPeriod === null) {
+                throw new InvalidConfigurationException('billingPeriod must not be empty for recurring products.');
+            }
+
+            $body['billing_period'] = BillingPeriod::toValue($billingPeriod);
+        }
+
+        if ($normalizedBillingType === BillingType::ONETIME->value && $billingPeriod !== null) {
+            $body['billing_period'] = BillingPeriod::toValue($billingPeriod);
+        }
+
         return new ProductResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: '/v1/products',
-            body: $payload->toArray(),
-            requestId: $payload->requestId(),
+            body: $body,
+            requestId: $requestId,
         )));
     }
 
-    /**
-     * @param string $productId
-     * @return ProductResource
-     */
     public function retrieve(string $productId): ProductResource
     {
         $normalizedProductId = trim($productId);
@@ -54,7 +88,6 @@ final class ProductsService
 
     /**
      * @param array<string, mixed> $query
-     * @return PaginatedResponse
      */
     public function search(int $pageNumber = 1, int $pageSize = 50, array $query = []): PaginatedResponse
     {

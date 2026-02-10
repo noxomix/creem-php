@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noxomix\CreemPhp\Tests\Unit;
 
 use Noxomix\CreemPhp\Config\CreemConfig;
+use Noxomix\CreemPhp\Config\EnvMode;
 use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 use PHPUnit\Framework\TestCase;
 
@@ -45,6 +46,15 @@ final class CreemConfigTest extends TestCase
         $config = CreemConfig::fromApiKey('creem_sandbox_key', 'sandbox');
 
         $this->assertSame('sandbox', $config->mode());
+        $this->assertSame('https://test-api.creem.io', $config->baseUrl());
+    }
+
+    public function test_it_accepts_mode_enum_input(): void
+    {
+        $config = CreemConfig::fromApiKey('creem_test_key', EnvMode::TEST);
+
+        $this->assertSame(EnvMode::TEST, $config->modeEnum());
+        $this->assertSame('test', $config->mode());
         $this->assertSame('https://test-api.creem.io', $config->baseUrl());
     }
 

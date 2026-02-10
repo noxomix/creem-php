@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noxomix\CreemPhp\Tests\Unit;
 
+use Noxomix\CreemPhp\Product\BillingPeriod;
 use Noxomix\CreemPhp\Resource\DiscountResource;
 use Noxomix\CreemPhp\Resource\CheckoutResource;
 use Noxomix\CreemPhp\Resource\CustomerResource;
@@ -63,6 +64,15 @@ final class ResourceAndEnumTest extends TestCase
             SubscriptionEventType::fromApiValue('subscription.paid'),
         );
         $this->assertNull(SubscriptionEventType::fromApiValue('unknown.event'));
+    }
+
+    public function test_billing_period_supports_enum_and_string_input(): void
+    {
+        $this->assertSame('every-month', BillingPeriod::toValue(BillingPeriod::EVERY_MONTH));
+        $this->assertSame('every-three-months', BillingPeriod::toValue(BillingPeriod::EVERY_THREE_MONTHS));
+        $this->assertSame('every-six-months', BillingPeriod::toValue(BillingPeriod::EVERY_SIX_MONTHS));
+        $this->assertSame('once', BillingPeriod::toValue(BillingPeriod::ONCE));
+        $this->assertSame('every-quarter', BillingPeriod::toValue('every-quarter'));
     }
 
     public function test_product_discount_and_license_resources_expose_core_fields(): void

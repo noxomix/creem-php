@@ -8,8 +8,6 @@ use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 
 final class CreemConfig
 {
-    private const PRODUCTION_BASE_URL = 'https://api.creem.io';
-    private const TEST_BASE_URL = 'https://test-api.creem.io';
     private const DEFAULT_CONNECT_TIMEOUT_SECONDS = 10.0;
     private const DEFAULT_REQUEST_TIMEOUT_SECONDS = 30.0;
     private const DEFAULT_MAX_RETRIES = 3;
@@ -19,7 +17,7 @@ final class CreemConfig
     public function __construct(
         private readonly string $apiKey,
         private readonly string $baseUrl,
-        private readonly string $mode,
+        private readonly EnvMode $mode,
         private readonly float $connectTimeoutSeconds,
         private readonly float $requestTimeoutSeconds,
         private readonly int $maxRetries,
@@ -37,7 +35,11 @@ final class CreemConfig
      *     retry_max_delay_ms?: int
      * } $options
      */
-    public static function fromApiKey(string $apiKey, string $mode = 'prod', array $options = []): self
+    public static function fromApiKey(
+        string $apiKey,
+        EnvMode|string $mode = 'prod',
+        array $options = [],
+    ): self
     {
         $normalizedMode = self::normalizeMode($mode);
         $normalizedApiKey = trim($apiKey);
@@ -49,7 +51,7 @@ final class CreemConfig
 
         return new self(
             apiKey: $normalizedApiKey,
-            baseUrl: $normalizedMode === 'prod' ? self::PRODUCTION_BASE_URL : self::TEST_BASE_URL,
+            baseUrl: $normalizedMode->defaultBaseUrl(),
             mode: $normalizedMode,
             connectTimeoutSeconds: $normalizedOptions['connect_timeout'],
             requestTimeoutSeconds: $normalizedOptions['request_timeout'],
@@ -68,7 +70,12 @@ final class CreemConfig
      *     retry_max_delay_ms?: int
      * } $options
      */
-    public static function fromBaseUrl(string $apiKey, string $baseUrl, string $mode = 'prod', array $options = []): self
+    public static function fromBaseUrl(
+        string $apiKey,
+        string $baseUrl,
+        EnvMode|string $mode = 'prod',
+        array $options = [],
+    ): self
     {
         $normalizedApiKey = trim($apiKey);
         $normalizedBaseUrl = rtrim(trim($baseUrl), '/');
@@ -107,6 +114,11 @@ final class CreemConfig
 
     public function mode(): string
     {
+        return $this->mode->value;
+    }
+
+    public function modeEnum(): EnvMode
+    {
         return $this->mode;
     }
 
@@ -135,22 +147,9 @@ final class CreemConfig
         return $this->retryMaxDelayMilliseconds;
     }
 
-    private static function normalizeMode(string $mode): string
+    private static function normalizeMode(EnvMode|string $mode): EnvMode
     {
-        $normalizedMode = strtolower(trim($mode));
-
-        if ($normalizedMode === 'production') {
-            return 'prod';
-        }
-
-        if (! in_array($normalizedMode, ['prod', 'test', 'sandbox'], true)) {
-            throw new InvalidConfigurationException(sprintf(
-                'Unsupported Creem mode "%s". Allowed values: prod, test, sandbox.',
-                $mode,
-            ));
-        }
-
-        return $normalizedMode;
+        return EnvMode::fromInput($mode);
     }
 
     /**

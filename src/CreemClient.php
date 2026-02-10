@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noxomix\CreemPhp;
 
 use Noxomix\CreemPhp\Config\CreemConfig;
+use Noxomix\CreemPhp\Config\EnvMode;
 use Noxomix\CreemPhp\Exception\ApiException;
 use Noxomix\CreemPhp\Exception\AuthenticationException;
 use Noxomix\CreemPhp\Exception\ConflictException;
@@ -35,6 +36,7 @@ final class CreemClient
 {
     /** @var array<int, int> */
     private const RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504];
+    private readonly CreemConfig $config;
     private readonly HttpTransportInterface $transport;
     private readonly LoggerInterface $logger;
     private readonly SleeperInterface $sleeper;
@@ -46,15 +48,28 @@ final class CreemClient
     private ?DiscountsService $discountsService = null;
     private ?LicensesService $licensesService = null;
 
+    /**
+     * @param array{
+     *     api_key: string,
+     *     mode?: EnvMode|string,
+     *     base_url?: string,
+     *     connect_timeout?: float|int,
+     *     request_timeout?: float|int,
+     *     max_retries?: int,
+     *     retry_base_delay_ms?: int,
+     *     retry_max_delay_ms?: int
+     * } $config
+     */
     public function __construct(
-        private readonly CreemConfig $config,
+        array $config,
         ?HttpTransportInterface $transport = null,
         ?LoggerInterface $logger = null,
         ?SleeperInterface $sleeper = null,
     ) {
+        $this->config = self::resolveConfig($config);
         $this->logger = $logger ?? new NullLogger();
         $this->transport = $transport ?? new GuzzleTransport(
-            baseUrl: $config->baseUrl(),
+            baseUrl: $this->config->baseUrl(),
             logger: $this->logger,
         );
         $this->sleeper = $sleeper ?? new NativeSleeper();
@@ -78,11 +93,6 @@ final class CreemClient
     public function endpoint(string $path): string
     {
         return $this->baseUrl().$this->normalizePath($path);
-    }
-
-    public function config(): CreemConfig
-    {
-        return $this->config;
     }
 
     public function checkouts(): CheckoutsService
@@ -337,5 +347,52 @@ final class CreemClient
         }
 
         return $normalized;
+    }
+
+    /**
+     * @param array{
+     *     api_key: string,
+     *     mode?: EnvMode|string,
+     *     base_url?: string,
+     *     connect_timeout?: float|int,
+     *     request_timeout?: float|int,
+     *     max_retries?: int,
+     *     retry_base_delay_ms?: int,
+     *     retry_max_delay_ms?: int
+     * } $config
+     */
+    private static function resolveConfig(array $config): CreemConfig
+    {
+        $apiKey = $config['api_key'] ?? null;
+
+        if (! is_string($apiKey)) {
+            throw new InvalidConfigurationException('config["api_key"] must be a string.');
+        }
+
+        $mode = $config['mode'] ?? 'prod';
+        $baseUrl = $config['base_url'] ?? null;
+        $options = [];
+
+        foreach ([
+            'connect_timeout',
+            'request_timeout',
+            'max_retries',
+            'retry_base_delay_ms',
+            'retry_max_delay_ms',
+        ] as $optionKey) {
+            if (array_key_exists($optionKey, $config)) {
+                $options[$optionKey] = $config[$optionKey];
+            }
+        }
+
+        if ($baseUrl === null) {
+            return CreemConfig::fromApiKey($apiKey, $mode, $options);
+        }
+
+        if (! is_string($baseUrl)) {
+            throw new InvalidConfigurationException('config["base_url"] must be a string when provided.');
+        }
+
+        return CreemConfig::fromBaseUrl($apiKey, $baseUrl, $mode, $options);
     }
 }

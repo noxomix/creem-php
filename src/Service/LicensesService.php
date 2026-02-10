@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Noxomix\CreemPhp\Service;
 
 use Noxomix\CreemPhp\CreemClient;
+use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 use Noxomix\CreemPhp\Http\RequestOptions;
-use Noxomix\CreemPhp\Request\Licenses\ActivateLicenseRequest;
-use Noxomix\CreemPhp\Request\Licenses\DeactivateLicenseRequest;
-use Noxomix\CreemPhp\Request\Licenses\ValidateLicenseRequest;
 use Noxomix\CreemPhp\Resource\LicenseResource;
 
 final class LicensesService
@@ -18,45 +16,73 @@ final class LicensesService
     ) {
     }
 
-    /**
-     * @param ActivateLicenseRequest $payload
-     * @return LicenseResource
-     */
-    public function activate(ActivateLicenseRequest $payload): LicenseResource
+    public function activate(string $key, string $instanceName, ?string $requestId = null): LicenseResource
     {
+        $normalizedKey = trim($key);
+        $normalizedInstanceName = trim($instanceName);
+
+        if ($normalizedKey === '') {
+            throw new InvalidConfigurationException('key must not be empty.');
+        }
+
+        if ($normalizedInstanceName === '') {
+            throw new InvalidConfigurationException('instanceName must not be empty.');
+        }
+
         return new LicenseResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: '/v1/licenses/activate',
-            body: $payload->toArray(),
-            requestId: $payload->requestId(),
+            body: [
+                'key' => $normalizedKey,
+                'instance_name' => $normalizedInstanceName,
+            ],
+            requestId: $requestId,
         )));
     }
 
-    /**
-     * @param ValidateLicenseRequest $payload
-     * @return LicenseResource
-     */
-    public function validate(ValidateLicenseRequest $payload): LicenseResource
+    public function validate(string $key, string $instanceId, ?string $requestId = null): LicenseResource
     {
+        $payload = $this->normalizeKeyAndInstanceId($key, $instanceId);
+
         return new LicenseResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: '/v1/licenses/validate',
-            body: $payload->toArray(),
-            requestId: $payload->requestId(),
+            body: $payload,
+            requestId: $requestId,
+        )));
+    }
+
+    public function deactivate(string $key, string $instanceId, ?string $requestId = null): LicenseResource
+    {
+        $payload = $this->normalizeKeyAndInstanceId($key, $instanceId);
+
+        return new LicenseResource($this->client->request(new RequestOptions(
+            method: 'POST',
+            path: '/v1/licenses/deactivate',
+            body: $payload,
+            requestId: $requestId,
         )));
     }
 
     /**
-     * @param DeactivateLicenseRequest $payload
-     * @return LicenseResource
+     * @return array{key:string,instance_id:string}
      */
-    public function deactivate(DeactivateLicenseRequest $payload): LicenseResource
+    private function normalizeKeyAndInstanceId(string $key, string $instanceId): array
     {
-        return new LicenseResource($this->client->request(new RequestOptions(
-            method: 'POST',
-            path: '/v1/licenses/deactivate',
-            body: $payload->toArray(),
-            requestId: $payload->requestId(),
-        )));
+        $normalizedKey = trim($key);
+        $normalizedInstanceId = trim($instanceId);
+
+        if ($normalizedKey === '') {
+            throw new InvalidConfigurationException('key must not be empty.');
+        }
+
+        if ($normalizedInstanceId === '') {
+            throw new InvalidConfigurationException('instanceId must not be empty.');
+        }
+
+        return [
+            'key' => $normalizedKey,
+            'instance_id' => $normalizedInstanceId,
+        ];
     }
 }

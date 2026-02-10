@@ -7,7 +7,6 @@ namespace Noxomix\CreemPhp\Service;
 use Noxomix\CreemPhp\CreemClient;
 use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 use Noxomix\CreemPhp\Http\RequestOptions;
-use Noxomix\CreemPhp\Request\Checkouts\CreateCheckoutRequest;
 use Noxomix\CreemPhp\Resource\CheckoutResource;
 
 final class CheckoutsService
@@ -17,24 +16,39 @@ final class CheckoutsService
     ) {
     }
 
-    /**
-     * @param CreateCheckoutRequest $payload
-     * @return CheckoutResource
-     */
-    public function create(CreateCheckoutRequest $payload): CheckoutResource
-    {
+    public function create(
+        string $productId,
+        ?string $successUrl = null,
+        ?string $requestId = null,
+    ): CheckoutResource {
+        $normalizedProductId = trim($productId);
+
+        if ($normalizedProductId === '') {
+            throw new InvalidConfigurationException('productId must not be empty.');
+        }
+
+        $body = [
+            'product_id' => $normalizedProductId,
+        ];
+
+        if ($successUrl !== null) {
+            $normalizedSuccessUrl = trim($successUrl);
+
+            if ($normalizedSuccessUrl === '') {
+                throw new InvalidConfigurationException('successUrl must not be empty when provided.');
+            }
+
+            $body['success_url'] = $normalizedSuccessUrl;
+        }
+
         return new CheckoutResource($this->client->request(new RequestOptions(
             method: 'POST',
             path: '/v1/checkouts',
-            body: $payload->toArray(),
-            requestId: $payload->requestId(),
+            body: $body,
+            requestId: $requestId,
         )));
     }
 
-    /**
-     * @param string $checkoutId
-     * @return CheckoutResource
-     */
     public function retrieve(string $checkoutId): CheckoutResource
     {
         $normalizedCheckoutId = trim($checkoutId);

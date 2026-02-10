@@ -4,23 +4,13 @@ declare(strict_types=1);
 
 namespace Noxomix\CreemPhp\Tests\Unit;
 
-use Noxomix\CreemPhp\Config\CreemConfig;
 use Noxomix\CreemPhp\CreemClient;
+use Noxomix\CreemPhp\Discount\DiscountDuration;
 use Noxomix\CreemPhp\Exception\InvalidConfigurationException;
 use Noxomix\CreemPhp\Http\HttpResponse;
 use Noxomix\CreemPhp\Pagination\PaginatedResponse;
-use Noxomix\CreemPhp\Request\Checkouts\CreateCheckoutRequest;
-use Noxomix\CreemPhp\Request\Customers\CreateBillingLinkRequest;
-use Noxomix\CreemPhp\Request\Discounts\CreateDiscountRequest;
-use Noxomix\CreemPhp\Request\Licenses\ActivateLicenseRequest;
-use Noxomix\CreemPhp\Request\Licenses\DeactivateLicenseRequest;
-use Noxomix\CreemPhp\Request\Licenses\ValidateLicenseRequest;
-use Noxomix\CreemPhp\Request\Products\CreateProductRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\CancelSubscriptionRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\PauseSubscriptionRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\ResumeSubscriptionRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\UpdateSubscriptionRequest;
-use Noxomix\CreemPhp\Request\Subscriptions\UpgradeSubscriptionRequest;
+use Noxomix\CreemPhp\Product\BillingPeriod;
+use Noxomix\CreemPhp\Product\BillingType;
 use Noxomix\CreemPhp\Resource\BillingLinkResource;
 use Noxomix\CreemPhp\Resource\CheckoutResource;
 use Noxomix\CreemPhp\Resource\CustomerResource;
@@ -38,7 +28,10 @@ final class ServiceCollectionsTest extends TestCase
     public function test_it_reuses_domain_service_instances(): void
     {
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: new FakeTransport([
                 new HttpResponse(200, [], '{}'),
             ]),
@@ -61,16 +54,17 @@ final class ServiceCollectionsTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: $transport,
         );
 
         $checkout = $client->checkouts()->create(
-            payload: new CreateCheckoutRequest(
-                productId: 'prod_1',
-                successUrl: 'https://example.com/success',
-                requestId: 'checkout_req_1',
-            ),
+            productId: 'prod_1',
+            successUrl: 'https://example.com/success',
+            requestId: 'checkout_req_1',
         );
         $retrieved = $client->checkouts()->retrieve('chk_1');
 
@@ -83,6 +77,7 @@ final class ServiceCollectionsTest extends TestCase
 
         $this->assertSame('POST', $requests[0]->method());
         $this->assertSame('/v1/checkouts', $requests[0]->path());
+        $this->assertSame('prod_1', $requests[0]->body()['product_id']);
         $this->assertSame('checkout_req_1', $requests[0]->body()['request_id']);
 
         $this->assertSame('GET', $requests[1]->method());
@@ -103,36 +98,33 @@ final class ServiceCollectionsTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: $transport,
         );
 
         $retrieved = $client->subscriptions()->retrieve('sub_1');
         $reconciled = $client->subscriptions()->reconcile('sub_1');
         $updated = $client->subscriptions()->update(
-            'sub_1',
-            UpdateSubscriptionRequest::withUpdateBehavior('proration-charge-immediately'),
+            subscriptionId: 'sub_1',
+            updateBehavior: 'proration-charge-immediately',
+            requestId: 'update_req_1',
         );
         $upgraded = $client->subscriptions()->upgrade(
-            'sub_1',
-            new UpgradeSubscriptionRequest('prod_new'),
+            subscriptionId: 'sub_1',
+            productId: 'prod_new',
+            requestId: 'upgrade_req_1',
         );
         $canceled = $client->subscriptions()->cancel(
-            'sub_1',
-            new CancelSubscriptionRequest(
-                mode: 'scheduled',
-                onExecute: 'cancel',
-                requestId: 'cancel_req_1',
-            ),
+            subscriptionId: 'sub_1',
+            mode: 'scheduled',
+            onExecute: 'cancel',
+            requestId: 'cancel_req_1',
         );
-        $paused = $client->subscriptions()->pause(
-            'sub_1',
-            new PauseSubscriptionRequest(requestId: 'pause_req_1'),
-        );
-        $resumed = $client->subscriptions()->resume(
-            'sub_1',
-            new ResumeSubscriptionRequest(requestId: 'resume_req_1'),
-        );
+        $paused = $client->subscriptions()->pause('sub_1', 'pause_req_1');
+        $resumed = $client->subscriptions()->resume('sub_1', 'resume_req_1');
 
         $requests = $transport->requests();
         $this->assertInstanceOf(SubscriptionResource::class, $retrieved);
@@ -152,6 +144,12 @@ final class ServiceCollectionsTest extends TestCase
         $this->assertSame('/v1/subscriptions/sub_1/cancel', $requests[4]->path());
         $this->assertSame('/v1/subscriptions/sub_1/pause', $requests[5]->path());
         $this->assertSame('/v1/subscriptions/sub_1/resume', $requests[6]->path());
+
+        $this->assertSame('proration-charge-immediately', $requests[2]->body()['update_behavior']);
+        $this->assertSame('update_req_1', $requests[2]->body()['request_id']);
+        $this->assertSame('prod_new', $requests[3]->body()['product_id']);
+        $this->assertSame('proration-charge-immediately', $requests[3]->body()['update_behavior']);
+        $this->assertSame('upgrade_req_1', $requests[3]->body()['request_id']);
         $this->assertSame('cancel_req_1', $requests[4]->body()['request_id']);
         $this->assertSame('scheduled', $requests[4]->body()['mode']);
         $this->assertSame('cancel', $requests[4]->body()['onExecute']);
@@ -178,17 +176,15 @@ final class ServiceCollectionsTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: $transport,
         );
 
         $customer = $client->customers()->retrieve('cus_1');
-        $billingLink = $client->customers()->createBillingLink(
-            new CreateBillingLinkRequest(
-                customerId: 'cus_1',
-                requestId: 'billing_1',
-            ),
-        );
+        $billingLink = $client->customers()->createBillingLink('cus_1', 'billing_1');
         $transaction = $client->transactions()->retrieve('txn_1');
         $customers = $client->customers()->list(pageNumber: 2, pageSize: 25);
         $transactions = $client->transactions()->search([
@@ -225,17 +221,15 @@ final class ServiceCollectionsTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: $transport,
         );
 
         $customer = $client->customers()->retrieveByEmail('user@example.com');
-        $billingLink = $client->customers()->createBillingLink(
-            new CreateBillingLinkRequest(
-                customerId: 'cus_2',
-                requestId: 'billing_2',
-            ),
-        );
+        $billingLink = $client->customers()->createBillingLink('cus_2', 'billing_2');
 
         $this->assertInstanceOf(CustomerResource::class, $customer);
         $this->assertInstanceOf(BillingLinkResource::class, $billingLink);
@@ -300,44 +294,47 @@ final class ServiceCollectionsTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: $transport,
         );
 
-        $product = $client->products()->create(new CreateProductRequest(
+        $product = $client->products()->create(
             name: 'Pro Plan',
             price: 2900,
             currency: 'usd',
-            billingType: 'recurring',
-            billingPeriod: 'every-month',
+            billingType: BillingType::RECURRING,
+            billingPeriod: BillingPeriod::EVERY_MONTH,
             requestId: 'product_req_1',
-        ));
+        );
         $retrievedProduct = $client->products()->retrieve('prod_1');
         $productList = $client->products()->search(pageNumber: 1, pageSize: 2);
 
-        $discount = $client->discounts()->create(new CreateDiscountRequest(
+        $discount = $client->discounts()->create(
             name: 'Launch Promo',
             type: 'percentage',
-            duration: 'once',
+            duration: DiscountDuration::ONCE,
             appliesToProducts: ['prod_1'],
             percentage: 50,
-        ));
+        );
         $discountById = $client->discounts()->retrieve(discountId: 'dis_1');
         $discountByCode = $client->discounts()->retrieve(discountCode: 'LAUNCH50');
         $client->discounts()->delete('dis_1');
 
-        $activatedLicense = $client->licenses()->activate(new ActivateLicenseRequest(
+        $activatedLicense = $client->licenses()->activate(
             key: 'ABC123',
             instanceName: 'server-1',
-        ));
-        $validatedLicense = $client->licenses()->validate(new ValidateLicenseRequest(
+        );
+        $validatedLicense = $client->licenses()->validate(
             key: 'ABC123',
             instanceId: 'inst_1',
-        ));
-        $deactivatedLicense = $client->licenses()->deactivate(new DeactivateLicenseRequest(
+        );
+        $deactivatedLicense = $client->licenses()->deactivate(
             key: 'ABC123',
             instanceId: 'inst_1',
-        ));
+        );
 
         $this->assertInstanceOf(ProductResource::class, $product);
         $this->assertInstanceOf(ProductResource::class, $retrievedProduct);
@@ -361,6 +358,7 @@ final class ServiceCollectionsTest extends TestCase
         $this->assertSame('/v1/products', $requests[0]->path());
         $this->assertSame('POST', $requests[0]->method());
         $this->assertSame('product_req_1', $requests[0]->body()['request_id']);
+        $this->assertSame('every-month', $requests[0]->body()['billing_period']);
         $this->assertSame('/v1/products', $requests[1]->path());
         $this->assertSame(['product_id' => 'prod_1'], $requests[1]->query());
         $this->assertSame('/v1/products/search', $requests[2]->path());
@@ -380,7 +378,10 @@ final class ServiceCollectionsTest extends TestCase
     public function test_customers_list_throws_for_invalid_pagination_values(): void
     {
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test'),
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
             transport: new FakeTransport([
                 new HttpResponse(200, [], '{}'),
             ]),

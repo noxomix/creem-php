@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Noxomix\CreemPhp\Tests\Unit;
 
-use Noxomix\CreemPhp\Config\CreemConfig;
 use Noxomix\CreemPhp\CreemClient;
 use Noxomix\CreemPhp\Exception\ApiException;
 use Noxomix\CreemPhp\Exception\AuthenticationException;
@@ -40,11 +39,13 @@ final class CreemClientContractMatrixTest extends TestCase
         $sleeper = new FakeSleeper();
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test', [
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
                 'max_retries' => 1,
                 'retry_base_delay_ms' => 100,
                 'retry_max_delay_ms' => 100,
-            ]),
+            ],
             transport: $transport,
             sleeper: $sleeper,
         );
@@ -65,11 +66,13 @@ final class CreemClientContractMatrixTest extends TestCase
         $sleeper = new FakeSleeper();
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test', [
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
                 'max_retries' => 1,
                 'retry_base_delay_ms' => 100,
                 'retry_max_delay_ms' => 100,
-            ]),
+            ],
             transport: $transport,
             sleeper: $sleeper,
         );
@@ -137,9 +140,11 @@ final class CreemClientContractMatrixTest extends TestCase
         ]);
 
         $client = new CreemClient(
-            config: CreemConfig::fromApiKey('creem_test_key', 'test', [
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
                 'max_retries' => 0,
-            ]),
+            ],
             transport: $transport,
         );
 

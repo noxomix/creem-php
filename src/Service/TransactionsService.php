@@ -18,10 +18,6 @@ final class TransactionsService
     ) {
     }
 
-    /**
-     * @param string $transactionId
-     * @return TransactionResource
-     */
     public function retrieve(string $transactionId): TransactionResource
     {
         $normalizedTransactionId = trim($transactionId);
@@ -39,7 +35,6 @@ final class TransactionsService
 
     /**
      * @param array<string, mixed> $query
-     * @return PaginatedResponse
      */
     public function search(array $query = []): PaginatedResponse
     {
