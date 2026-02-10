@@ -32,6 +32,16 @@ final class ProductResource
         return self::stringOrNull($this->attributes['name'] ?? null);
     }
 
+    public function description(): ?string
+    {
+        return self::stringOrNull($this->attributes['description'] ?? null);
+    }
+
+    public function imageUrl(): ?string
+    {
+        return self::stringOrNull($this->attributes['image_url'] ?? null);
+    }
+
     public function status(): ?string
     {
         return self::stringOrNull($this->attributes['status'] ?? null);
@@ -55,6 +65,26 @@ final class ProductResource
     public function billingPeriod(): ?string
     {
         return self::stringOrNull($this->attributes['billing_period'] ?? null);
+    }
+
+    public function taxMode(): ?string
+    {
+        return self::stringOrNull($this->attributes['tax_mode'] ?? null);
+    }
+
+    public function taxCategory(): ?string
+    {
+        return self::stringOrNull($this->attributes['tax_category'] ?? null);
+    }
+
+    public function defaultSuccessUrl(): ?string
+    {
+        return self::stringOrNull($this->attributes['default_success_url'] ?? null);
+    }
+
+    public function abandonedCartRecoveryEnabled(): ?bool
+    {
+        return self::boolOrNull($this->attributes['abandoned_cart_recovery_enabled'] ?? null);
     }
 
     private static function intOrNull(mixed $value): ?int
@@ -83,5 +113,14 @@ final class ProductResource
         }
 
         return $normalized;
+    }
+
+    private static function boolOrNull(mixed $value): ?bool
+    {
+        if (! is_bool($value)) {
+            return null;
+        }
+
+        return $value;
     }
 }

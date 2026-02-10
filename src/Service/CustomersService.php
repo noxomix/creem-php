@@ -19,33 +19,40 @@ final class CustomersService
     ) {
     }
 
-    public function retrieve(string $customerId): CustomerResource
+    /**
+     * Retrieve a customer by unique ID or email address.
+     */
+    public function retrieve(?string $customerId = null, ?string $email = null): CustomerResource
     {
-        $normalizedCustomerId = trim($customerId);
+        $normalizedCustomerId = $customerId === null ? null : trim($customerId);
+        $normalizedEmail = $email === null ? null : trim($email);
 
         if ($normalizedCustomerId === '') {
-            throw new InvalidConfigurationException('customerId must not be empty.');
+            throw new InvalidConfigurationException('customerId must not be empty when provided.');
         }
-
-        return new CustomerResource($this->client->request(new RequestOptions(
-            method: 'GET',
-            path: '/v1/customers',
-            query: ['customer_id' => $normalizedCustomerId],
-        )));
-    }
-
-    public function retrieveByEmail(string $email): CustomerResource
-    {
-        $normalizedEmail = trim($email);
 
         if ($normalizedEmail === '') {
-            throw new InvalidConfigurationException('email must not be empty.');
+            throw new InvalidConfigurationException('email must not be empty when provided.');
+        }
+
+        if ($normalizedCustomerId === null && $normalizedEmail === null) {
+            throw new InvalidConfigurationException('Provide either customerId or email.');
+        }
+
+        if ($normalizedCustomerId !== null && $normalizedEmail !== null) {
+            throw new InvalidConfigurationException('Provide either customerId or email, not both.');
+        }
+
+        if ($normalizedEmail !== null && filter_var($normalizedEmail, FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidConfigurationException('email must be a valid email address.');
         }
 
         return new CustomerResource($this->client->request(new RequestOptions(
             method: 'GET',
             path: '/v1/customers',
-            query: ['email' => $normalizedEmail],
+            query: $normalizedCustomerId !== null
+                ? ['customer_id' => $normalizedCustomerId]
+                : ['email' => $normalizedEmail],
         )));
     }
 

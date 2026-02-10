@@ -18,6 +18,8 @@ use Noxomix\CreemPhp\CreemClient;
 use Noxomix\CreemPhp\Discount\DiscountDuration;
 use Noxomix\CreemPhp\Product\BillingPeriod;
 use Noxomix\CreemPhp\Product\BillingType;
+use Noxomix\CreemPhp\Product\TaxCategory;
+use Noxomix\CreemPhp\Product\TaxMode;
 use Noxomix\CreemPhp\Subscription\SubscriptionStatus;
 
 $client = new CreemClient([
@@ -27,6 +29,9 @@ $client = new CreemClient([
 
 $checkout = $client->checkouts()->create(
     productId: 'prod_123',
+    discountCode: 'LAUNCH50', // optional
+    customer: ['email' => 'user@example.ee'], // optional prefill
+    metadata: ['source' => 'readme'], // optional
 );
 
 $oneTimeProduct = $client->products()->create(
@@ -42,6 +47,9 @@ $recurringProduct = $client->products()->create(
     currency: 'EUR',
     billingType: BillingType::RECURRING,
     billingPeriod: BillingPeriod::EVERY_MONTH,
+    taxMode: TaxMode::EXCLUSIVE,
+    taxCategory: TaxCategory::SAAS,
+    defaultSuccessUrl: 'https://example.com/success',
 );
 
 $customRecurringProduct = $client->products()->create(
@@ -79,7 +87,7 @@ $repeatingDiscount = $client->discounts()->create(
 
 $subscription = $client->subscriptions()->retrieve('sub_123'); // Load one subscription by ID
 $customers = $client->customers()->list(); // Fetch first customer page (defaults: page 1, size 50)
-$customerByEmail = $client->customers()->retrieveByEmail('user@example.ee'); // Fetch one customer by email
+$customerByEmail = $client->customers()->retrieve(email: 'user@example.ee'); // Fetch one customer by email
 $transactions = $client->transactions()->search(); // Search transactions with default query
 
 if ($subscription->status() === SubscriptionStatus::ACTIVE) {
@@ -121,5 +129,5 @@ $result = $processor->process($rawJsonBody, $headers['creem-signature'] ?? null)
 - Guzzle HTTP.
 - Error diagnostics preserve `trace_id`, `status`, `error`, and `message` values when present.
 - Root client exposes domain services: `checkouts`, `subscriptions`, `customers`, `transactions`, `products`, `discounts`, `licenses`.
-- Enums resolve to API strings, but string input remains supported (`EnvMode`, `BillingType`, `BillingPeriod`, `DiscountDuration`).
+- Enums resolve to API strings, but string input remains supported (`EnvMode`, `BillingType`, `BillingPeriod`, `TaxMode`, `TaxCategory`, `DiscountDuration`).
 - Webhook processing includes signature verification, parsing, dispatching, and duplicate-event protection.

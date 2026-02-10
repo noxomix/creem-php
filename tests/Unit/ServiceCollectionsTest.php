@@ -11,6 +11,8 @@ use Noxomix\CreemPhp\Http\HttpResponse;
 use Noxomix\CreemPhp\Pagination\PaginatedResponse;
 use Noxomix\CreemPhp\Product\BillingPeriod;
 use Noxomix\CreemPhp\Product\BillingType;
+use Noxomix\CreemPhp\Product\TaxCategory;
+use Noxomix\CreemPhp\Product\TaxMode;
 use Noxomix\CreemPhp\Resource\BillingLinkResource;
 use Noxomix\CreemPhp\Resource\CheckoutResource;
 use Noxomix\CreemPhp\Resource\CustomerResource;
@@ -65,6 +67,21 @@ final class ServiceCollectionsTest extends TestCase
             productId: 'prod_1',
             successUrl: 'https://example.com/success',
             requestId: 'checkout_req_1',
+            units: 2,
+            discountCode: 'LAUNCH50',
+            customer: ['email' => 'user@example.com'],
+            metadata: ['source' => 'unit-test'],
+            customFields: [
+                [
+                    'type' => 'text',
+                    'key' => 'company',
+                    'label' => 'Company',
+                    'text' => [
+                        'min_length' => 1,
+                        'max_length' => 200,
+                    ],
+                ],
+            ],
         );
         $retrieved = $client->checkouts()->retrieve('chk_1');
 
@@ -79,6 +96,12 @@ final class ServiceCollectionsTest extends TestCase
         $this->assertSame('/v1/checkouts', $requests[0]->path());
         $this->assertSame('prod_1', $requests[0]->body()['product_id']);
         $this->assertSame('checkout_req_1', $requests[0]->body()['request_id']);
+        $this->assertSame(2, $requests[0]->body()['units']);
+        $this->assertSame('LAUNCH50', $requests[0]->body()['discount_code']);
+        $this->assertSame(['email' => 'user@example.com'], $requests[0]->body()['customer']);
+        $this->assertSame(['source' => 'unit-test'], $requests[0]->body()['metadata']);
+        $this->assertSame('text', $requests[0]->body()['custom_fields'][0]['type']);
+        $this->assertSame('company', $requests[0]->body()['custom_fields'][0]['key']);
 
         $this->assertSame('GET', $requests[1]->method());
         $this->assertSame('/v1/checkouts', $requests[1]->path());
@@ -183,7 +206,7 @@ final class ServiceCollectionsTest extends TestCase
             transport: $transport,
         );
 
-        $customer = $client->customers()->retrieve('cus_1');
+        $customer = $client->customers()->retrieve(customerId: 'cus_1');
         $billingLink = $client->customers()->createBillingLink('cus_1', 'billing_1');
         $transaction = $client->transactions()->retrieve('txn_1');
         $customers = $client->customers()->list(pageNumber: 2, pageSize: 25);
@@ -213,7 +236,7 @@ final class ServiceCollectionsTest extends TestCase
         $this->assertSame('/v1/transactions', $requests[2]->path());
     }
 
-    public function test_customers_service_can_retrieve_by_email_and_map_customer_portal_link(): void
+    public function test_customers_service_can_retrieve_by_email_with_single_retrieve_method_and_map_customer_portal_link(): void
     {
         $transport = new FakeTransport([
             new HttpResponse(200, [], '{"id":"cus_2","email":"user@example.com"}'),
@@ -228,7 +251,7 @@ final class ServiceCollectionsTest extends TestCase
             transport: $transport,
         );
 
-        $customer = $client->customers()->retrieveByEmail('user@example.com');
+        $customer = $client->customers()->retrieve(email: 'user@example.com');
         $billingLink = $client->customers()->createBillingLink('cus_2', 'billing_2');
 
         $this->assertInstanceOf(CustomerResource::class, $customer);
@@ -308,6 +331,22 @@ final class ServiceCollectionsTest extends TestCase
             billingType: BillingType::RECURRING,
             billingPeriod: BillingPeriod::EVERY_MONTH,
             requestId: 'product_req_1',
+            description: 'Full access',
+            imageUrl: 'https://example.com/product.png',
+            taxMode: TaxMode::EXCLUSIVE,
+            taxCategory: TaxCategory::SAAS,
+            defaultSuccessUrl: 'https://example.com/success',
+            customFields: [
+                [
+                    'type' => 'checkbox',
+                    'key' => 'termsAccepted',
+                    'label' => 'Terms accepted',
+                    'checkbox' => [
+                        'label' => 'I agree',
+                    ],
+                ],
+            ],
+            abandonedCartRecoveryEnabled: true,
         );
         $retrievedProduct = $client->products()->retrieve('prod_1');
         $productList = $client->products()->search(pageNumber: 1, pageSize: 2);
@@ -359,6 +398,13 @@ final class ServiceCollectionsTest extends TestCase
         $this->assertSame('POST', $requests[0]->method());
         $this->assertSame('product_req_1', $requests[0]->body()['request_id']);
         $this->assertSame('every-month', $requests[0]->body()['billing_period']);
+        $this->assertSame('Full access', $requests[0]->body()['description']);
+        $this->assertSame('https://example.com/product.png', $requests[0]->body()['image_url']);
+        $this->assertSame('exclusive', $requests[0]->body()['tax_mode']);
+        $this->assertSame('saas', $requests[0]->body()['tax_category']);
+        $this->assertSame('https://example.com/success', $requests[0]->body()['default_success_url']);
+        $this->assertSame('checkbox', $requests[0]->body()['custom_fields'][0]['type']);
+        $this->assertTrue($requests[0]->body()['abandoned_cart_recovery_enabled']);
         $this->assertSame('/v1/products', $requests[1]->path());
         $this->assertSame(['product_id' => 'prod_1'], $requests[1]->query());
         $this->assertSame('/v1/products/search', $requests[2]->path());

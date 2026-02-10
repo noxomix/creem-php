@@ -28,7 +28,12 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/phpunit"
+        "test": "vendor/bin/phpunit --testsuite Unit",
+        "test:integration": "vendor/bin/phpunit --testsuite Integration",
+        "test:all": [
+            "@test",
+            "@test:integration"
+        ]
     },
     "config": {
         "sort-packages": true

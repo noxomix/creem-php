@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Noxomix\CreemPhp\Tests\Unit;
 
 use Noxomix\CreemPhp\Product\BillingPeriod;
+use Noxomix\CreemPhp\Product\TaxCategory;
+use Noxomix\CreemPhp\Product\TaxMode;
 use Noxomix\CreemPhp\Resource\DiscountResource;
 use Noxomix\CreemPhp\Resource\CheckoutResource;
 use Noxomix\CreemPhp\Resource\CustomerResource;
@@ -75,16 +77,30 @@ final class ResourceAndEnumTest extends TestCase
         $this->assertSame('every-quarter', BillingPeriod::toValue('every-quarter'));
     }
 
+    public function test_tax_mode_and_category_accept_enum_and_string_input(): void
+    {
+        $this->assertSame('inclusive', TaxMode::fromInput(TaxMode::INCLUSIVE)->value);
+        $this->assertSame('exclusive', TaxMode::fromInput('exclusive')->value);
+        $this->assertSame('saas', TaxCategory::fromInput(TaxCategory::SAAS)->value);
+        $this->assertSame('ebooks', TaxCategory::fromInput('ebooks')->value);
+    }
+
     public function test_product_discount_and_license_resources_expose_core_fields(): void
     {
         $product = new ProductResource([
             'id' => 'prod_1',
             'name' => 'Pro Plan',
+            'description' => 'Full access to all features',
+            'image_url' => 'https://example.com/product.png',
             'status' => 'active',
             'price' => 2900,
             'currency' => 'USD',
             'billing_type' => 'recurring',
             'billing_period' => 'every-month',
+            'tax_mode' => 'exclusive',
+            'tax_category' => 'saas',
+            'default_success_url' => 'https://example.com/success',
+            'abandoned_cart_recovery_enabled' => true,
         ]);
 
         $discount = new DiscountResource([
@@ -111,10 +127,16 @@ final class ResourceAndEnumTest extends TestCase
 
         $this->assertSame('prod_1', $product->id());
         $this->assertSame('Pro Plan', $product->name());
+        $this->assertSame('Full access to all features', $product->description());
+        $this->assertSame('https://example.com/product.png', $product->imageUrl());
         $this->assertSame(2900, $product->price());
         $this->assertSame('USD', $product->currency());
         $this->assertSame('recurring', $product->billingType());
         $this->assertSame('every-month', $product->billingPeriod());
+        $this->assertSame('exclusive', $product->taxMode());
+        $this->assertSame('saas', $product->taxCategory());
+        $this->assertSame('https://example.com/success', $product->defaultSuccessUrl());
+        $this->assertTrue($product->abandonedCartRecoveryEnabled());
 
         $this->assertSame('dis_1', $discount->id());
         $this->assertSame('LAUNCH50', $discount->code());
