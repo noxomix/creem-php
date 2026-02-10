@@ -239,7 +239,7 @@ final class CreemClient
     {
         $trimmedRequestId = $requestId === null ? null : trim($requestId);
 
-        if ($trimmedRequestId === '') {
+        if ($trimmedRequestId === null || $trimmedRequestId === '') {
             return $body;
         }
 

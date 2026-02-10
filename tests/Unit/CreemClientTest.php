@@ -148,6 +148,30 @@ final class CreemClientTest extends TestCase
         $this->assertSame(['checkout_id' => 'chk_1'], $request->query());
     }
 
+    public function test_it_does_not_add_request_id_when_not_provided_for_post_requests(): void
+    {
+        $transport = new FakeTransport([
+            new HttpResponse(200, [], '{"ok":true}'),
+        ]);
+
+        $client = new CreemClient(
+            config: [
+                'api_key' => 'creem_test_key',
+                'mode' => 'test',
+            ],
+            transport: $transport,
+        );
+
+        $client->rawRequest(
+            method: 'POST',
+            path: '/v1/products',
+            body: ['name' => 'Starter'],
+        );
+
+        $request = $transport->requests()[0];
+        $this->assertArrayNotHasKey('request_id', $request->body());
+    }
+
     public function test_it_retries_rate_limit_responses_and_then_returns_success(): void
     {
         $transport = new FakeTransport([

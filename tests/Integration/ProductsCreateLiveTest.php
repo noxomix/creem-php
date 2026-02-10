@@ -38,7 +38,6 @@ final class ProductsCreateLiveTest extends IntegrationTestCase
                 ],
             ],
             abandonedCartRecoveryEnabled: false,
-            requestId: sprintf('integration-product-%s', bin2hex(random_bytes(4))),
         );
 
         $this->assertNotNull($product->id());

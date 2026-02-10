@@ -5,10 +5,16 @@ declare(strict_types=1);
 namespace Noxomix\CreemPhp\Tests\Integration;
 
 use Noxomix\CreemPhp\CreemClient;
+use Noxomix\CreemPhp\Exception\NotFoundException;
+use Noxomix\CreemPhp\Product\BillingType;
 use PHPUnit\Framework\TestCase;
 
 abstract class IntegrationTestCase extends TestCase
 {
+    private ?CreemClient $integrationClient = null;
+    /** @var list<string> */
+    private array $discountIdsForCleanup = [];
+
     protected function createIntegrationClient(): CreemClient
     {
         $this->requireIntegrationEnabled();
@@ -26,7 +32,9 @@ abstract class IntegrationTestCase extends TestCase
             $config['base_url'] = $baseUrl;
         }
 
-        return new CreemClient($config);
+        $this->integrationClient = new CreemClient($config);
+
+        return $this->integrationClient;
     }
 
     protected function requireIntegrationEnabled(): void
@@ -62,5 +70,53 @@ abstract class IntegrationTestCase extends TestCase
         }
 
         return $value;
+    }
+
+    protected function integrationProductId(CreemClient $client): string
+    {
+        $product = $client->products()->create(
+            name: sprintf('SDK Integration %s', bin2hex(random_bytes(4))),
+            description: 'Integration test product',
+            price: 1900,
+            currency: 'USD',
+            billingType: BillingType::ONETIME,
+        );
+
+        $productId = $product->id();
+
+        if (! is_string($productId) || trim($productId) === '') {
+            $this->fail('Failed to create an integration product ID.');
+        }
+
+        return $productId;
+    }
+
+    protected function registerDiscountForCleanup(string $discountId): void
+    {
+        $normalized = trim($discountId);
+
+        if ($normalized !== '') {
+            $this->discountIdsForCleanup[] = $normalized;
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->integrationClient !== null) {
+            foreach ($this->discountIdsForCleanup as $discountId) {
+                try {
+                    $this->integrationClient->discounts()->delete($discountId);
+                } catch (NotFoundException) {
+                    // already deleted during test flow
+                } catch (\Throwable) {
+                    // cleanup must never hide test assertions
+                }
+            }
+        }
+
+        $this->discountIdsForCleanup = [];
+        $this->integrationClient = null;
+
+        parent::tearDown();
     }
 }
